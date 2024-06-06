@@ -10,7 +10,7 @@ typedef struct virus {
     unsigned char* sig;
 } virus;
 
-struct link {
+typedef struct link {
     link *nextVirus;
     virus *vir;
 } link;
