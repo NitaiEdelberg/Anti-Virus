@@ -1,4 +1,4 @@
-all: BubbleSort antivirus valgrid
+all: BubbleSort antivirus
 
 BubbleSort: BubbleSort.o
 
@@ -18,7 +18,7 @@ antivirus.o: antivirus.c
 
 valgrid:
 
-	valgrind --leak-check=full --show-reachable=yes BubbleSort 3 4 2 1
+	valgrind --leak-check=full --show-reachable=yes ./antivirus
 
 .PHONY: clean
 

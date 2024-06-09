@@ -4,6 +4,8 @@
 
 #define FILE_MAX_SIZE 10000
 
+/*================================================================================================================================*/
+
 typedef struct virus {
     unsigned short SigSize;
     char virusName[16];
@@ -16,15 +18,64 @@ struct link{
     virus *vir;
 };
 
-char *fileName = "signatures-L";
-FILE *suspectedFile = NULL;
+/*================================================================================================================================*/
 
-// struct linkedlist
-// {
-//     link *first;
-//     link *last;
-//     int size;
-// };
+char* fileName = "/home/devcontainers/ESPL/labB/signatures-L";
+FILE* suspectedFile = NULL;
+link* virus_list = NULL;
+
+/*================================================================================================================================*/
+
+/* Print the data of every link in list to the given stream. Each item followed by a newline character. */
+void list_print(link *virus_list, FILE* file)
+{
+    link *curr = virus_list;
+    while (curr != NULL && file != NULL)
+    {
+        fprintf(file, "\nVirus name: %s\n",curr->vir->virusName);
+        fprintf(file, "Virus size: %d\n",curr->vir->SigSize);
+        fprintf(file, "Signature:\n");
+        for (int i = 0; i < curr->vir->SigSize; i++)
+        {
+            fprintf(file, "%X ", curr->vir->sig[i]);
+            if ((i + 1)% 20 == 0)
+            {
+                fprintf(file, "\n");
+            }
+        }
+        fprintf(file, "\n");
+        curr = curr->nextVirus;
+    }
+}
+
+/* Add a new link with the given data at the beginning of the list and return a pointer to the list (i.e., the first link in the list). If the list is null - create a new entry and return a pointer to the entry. */
+link* list_append(link* virus_list, virus* data)
+{
+    link *newLink = malloc(sizeof(link));
+    newLink->nextVirus = virus_list; //if list is empty, virus_list is NULL
+    newLink->vir = data;
+    return newLink;
+}
+
+/* Free the memory allocated by the list. */
+void list_free(link *virus_list)
+{
+    if (virus_list == NULL)
+    {
+        return;
+    }
+
+    free(virus_list->vir->sig);
+    free(virus_list->vir);
+    if (virus_list->nextVirus != NULL)
+    {
+        link *tmp = virus_list->nextVirus;
+        list_free(tmp);
+    }
+    virus_list = NULL;
+}
+
+/*================================================================================================================================*/
 
 void SetSigFileName( )
 {
@@ -40,19 +91,20 @@ void SetSigFileName( )
 
 virus* readVirus(FILE* file)
 {
-    virus *virus = malloc(sizeof(virus));
-    if (fread(virus, 1, 18, file) == 0) // ERROR/EOF
+    virus* virs = malloc(sizeof(virus));
+    if (fread(virs, 1, 18, file) == 0) // ERROR/EOF
     {
+        free(virs);
         return NULL;
     }
-    virus->sig = malloc(virus->SigSize);
-    fread(virus->sig, virus->SigSize, 1, file); // handle error
-    return virus;
+    virs->sig = malloc(virs->SigSize);
+    fread(virs->sig, 1, virs->SigSize, file); // handle error
+    return virs;
 }
 
 void printVirus(virus* virus)
 {
-    printf("Virus name: %s\n", virus->virusName);
+    printf("\nVirus name: %s\n", virus->virusName);
     printf("Virus size: %d\n", virus->SigSize);
     printf("Signature:\n");
     for (int i = 0; i < virus->SigSize; i++)
@@ -66,46 +118,17 @@ void printVirus(virus* virus)
     printf("\n");
 }
 
-/* Print the data of every link in list to the given stream. Each item followed by a newline character. */
-void list_print(link *virus_list, FILE* file)
-{
-    link *curr = virus_list;
-    while (curr != NULL)
-    {
-        fprintf(file, curr->vir);
-        fprintf(file, "%s", "\n");
-        
-    }
-    
-    
-}
-
-/* Add a new link with the given data at the beginning of the list and return a pointer to the list (i.e., the first link in the list). If the list is null - create a new entry and return a pointer to the entry. */
-link* list_append(link* virus_list, virus* data)
-{
-    link *newLink = malloc(sizeof(link));
-    newLink->nextVirus = virus_list; //if list is empty, virus_list is NULL
-    newLink->vir = data;
-    return newLink;
-}
-
-/* Free the memory allocated by the list. */
-void list_free(link *virus_list)
-{
-    free(virus_list->vir->sig);
-    free(virus_list->vir);
-    if (virus_list->nextVirus != NULL)
-    {
-        link *tmp = virus_list->nextVirus;
-        list_free(tmp);
-    }
-    virus_list = NULL;
-}
 void load_sig()
 {
-    if((suspectedFile = fopen(fileName, "rb")) == NULL)
+    if (suspectedFile != NULL)
     {
-        perror("Error opening file.");
+        fclose(suspectedFile);
+    }
+    
+    suspectedFile = fopen(fileName, "rb");
+    if(suspectedFile == NULL)
+    {
+        perror("Error opening file.\n");
         exit(EXIT_FAILURE);
     }
     char magicNumber[4];
@@ -121,15 +144,17 @@ void load_sig()
         perror("Unknown file type.\n");
         exit(EXIT_FAILURE);
     }
-}
 
-void detect_viruses(link *virus_list)
-{
-    FILE *suspectedFile = fopen(fileName, "r");
-    char fileBuffer[FILE_MAX_SIZE];
-    fread(fileBuffer, 1, FILE_MAX_SIZE, suspectedFile);
-    fclose(suspectedFile);
-    detect_virus(fileBuffer, FILE_MAX_SIZE, virus_list);
+    if (virus_list != NULL)
+    {
+        list_free(virus_list);
+    }
+    
+    virus* virus;
+    while ((virus = readVirus(suspectedFile)) != NULL)
+    {
+        virus_list = list_append(virus_list, virus);
+    }
 }
 
 void detect_virus(char *buffer, unsigned int size, link *virus_list)
@@ -137,13 +162,13 @@ void detect_virus(char *buffer, unsigned int size, link *virus_list)
     link *curr_virus = virus_list;
     while (curr_virus != NULL)
     {
-        for (int i = 0; i < size; i++)
+        char *sig = curr_virus->vir->sig;
+        int sigSize = curr_virus->vir->SigSize;
+        for (int i = 0; i < size - sigSize; i++)
         {
-            char *sig = curr_virus->vir->sig;
-            int sigSize = curr_virus->vir->SigSize;
-            if (memcmp(buffer[i], sig, sigSize) == 0)
+            if (memcmp(&buffer[i], sig, sigSize) == 0)
             {
-                printf("Starting location of virus: %d\n", i);
+                printf("\nStarting location of virus: %d\n", i);
                 printf("Virus name: %s\n", curr_virus->vir->virusName);
                 printf("Virus signature size: %d\n", sigSize);
                 i = i + sigSize - 1; //can a virus apear once more?
@@ -152,6 +177,16 @@ void detect_virus(char *buffer, unsigned int size, link *virus_list)
         curr_virus = curr_virus->nextVirus;
     }
 }
+
+void detect_viruses(link *virus_list)
+{
+    suspectedFile = fopen(fileName, "r");
+    char fileBuffer[FILE_MAX_SIZE];
+    fread(fileBuffer, 1, FILE_MAX_SIZE, suspectedFile);
+    fclose(suspectedFile);
+    detect_virus(fileBuffer, FILE_MAX_SIZE, virus_list);
+}
+
 //TODO
 void neutralize_virus(char *fileName, int signatureOffset)
 {
@@ -167,21 +202,15 @@ void quit(link *viruslist) {
 struct fun_desc
 {
     char *name;
-    link* (*fun)(link*, char*);
+    void (*fun)();
 };
-
-void implement(int user_choise ,link* (*fun)(link*, char*))
-{
-  
-  
-}
 
 void menu(void){
     char s[5];
-    link* viruslist;
+
     struct fun_desc menu[] = {
         { "Set signatures file name", SetSigFileName }, { "Load signatures", load_sig }, { "Print signatures", list_print},
-        { "Detect viruses", detect_virus}, { "Fix file", neutralize_virus }, { "Quit", quit},
+        { "Detect viruses", detect_viruses}, { "Fix file", neutralize_virus }, { "Quit", quit},
         { NULL, NULL }
     };
 
@@ -211,10 +240,35 @@ void menu(void){
             break;
         }
         printf("\nWithin bounds\n");
-        implement(userChoise, menu[userChoise].fun);
+        if (userChoise == 0 || userChoise == 1)
+        {
+            menu[userChoise].fun();
+        } else if (userChoise == 2)
+        {
+            char namebuff[50];
+            printf("Enter file name: \n");
+            if (fgets(namebuff, sizeof(namebuff), stdin) != NULL)
+            {
+                namebuff[strcspn(namebuff, "\n")] = '\0';
+                FILE *output = fopen(namebuff, "w");
+                menu[userChoise].fun(virus_list, suspectedFile);
+                if (output != stdout)
+                {
+                    fclose(output);
+                }
+                
+            }
+        } else if (userChoise == 3 || userChoise == 5)
+        {
+            menu[userChoise].fun(virus_list);
+        } else // userChoise == 4
+        {
+            menu[userChoise].fun(fileName, 0); //TODO
+        }
+        
         printf("DONE.\n");
     }
-    list_free(viruslist);
+    list_free(virus_list);
 }
 
 
