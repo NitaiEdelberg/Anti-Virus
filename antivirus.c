@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <linux/limits.h>
 
 #define FILE_MAX_SIZE 10000
 
@@ -20,8 +21,8 @@ struct link{
 
 /*================================================================================================================================*/
 
-char* fileName = "/home/devcontainers/ESPL/labB/signatures-L";
-FILE* suspectedFile = NULL;
+char* fileName;
+
 link* virus_list = NULL;
 
 /*================================================================================================================================*/
@@ -37,7 +38,7 @@ void list_print(link *virus_list, FILE* file)
         fprintf(file, "Signature:\n");
         for (int i = 0; i < curr->vir->SigSize; i++)
         {
-            fprintf(file, "%X ", curr->vir->sig[i]);
+            fprintf(file, "%02X ", curr->vir->sig[i]);
             if ((i + 1)% 20 == 0)
             {
                 fprintf(file, "\n");
@@ -58,35 +59,35 @@ link* list_append(link* virus_list, virus* data)
 }
 
 /* Free the memory allocated by the list. */
-void list_free(link *virus_list)
-{
-    if (virus_list == NULL)
-    {
-        return;
+void list_free(link *virus_list) {
+    while (virus_list != NULL) {
+        link *tmp = virus_list;
+        virus_list = virus_list->nextVirus;
+        free(tmp->vir->sig);
+        free(tmp->vir);
+        free(tmp);
     }
-
-    free(virus_list->vir->sig);
-    free(virus_list->vir);
-    if (virus_list->nextVirus != NULL)
-    {
-        link *tmp = virus_list->nextVirus;
-        list_free(tmp);
-    }
-    virus_list = NULL;
 }
 
 /*================================================================================================================================*/
 
 void SetSigFileName( )
 {
-    char buff[1024];
-    printf("Please enter signiture file name:\n");
-    if (fgets(buff, sizeof(buff), stdin) == NULL)
+    char nameBuff[1024];
+    printf("Please enter signature file name:\n");
+    if (fgets(nameBuff, sizeof(nameBuff), stdin) == NULL)
     {
-        perror("Error parsing signiture name file.\n");
+        perror("Error parsing signature name file.\n");
     }
-    buff[strcspn(buff, "\n")] = 0; // remove the '\n' char
-    fileName = buff;
+    nameBuff[strcspn(nameBuff, "\n")] = '\0'; // remove the '\n' char
+    free(fileName);
+    if ((fileName = strdup(nameBuff)) == NULL)
+    {
+        printf("Error reading signature file name. Setting to default.");
+        fileName = strdup("signatures-L");
+    }
+    
+    
 }
 
 virus* readVirus(FILE* file)
@@ -120,10 +121,7 @@ void printVirus(virus* virus)
 
 void load_sig()
 {
-    if (suspectedFile != NULL)
-    {
-        fclose(suspectedFile);
-    }
+    FILE* suspectedFile;
     
     suspectedFile = fopen(fileName, "rb");
     if(suspectedFile == NULL)
@@ -155,6 +153,7 @@ void load_sig()
     {
         virus_list = list_append(virus_list, virus);
     }
+    fclose(suspectedFile);
 }
 
 void detect_virus(char *buffer, unsigned int size, link *virus_list)
@@ -162,7 +161,7 @@ void detect_virus(char *buffer, unsigned int size, link *virus_list)
     link *curr_virus = virus_list;
     while (curr_virus != NULL)
     {
-        char *sig = curr_virus->vir->sig;
+        unsigned char *sig = curr_virus->vir->sig;
         int sigSize = curr_virus->vir->SigSize;
         for (int i = 0; i < size - sigSize; i++)
         {
@@ -180,6 +179,7 @@ void detect_virus(char *buffer, unsigned int size, link *virus_list)
 
 void detect_viruses(link *virus_list)
 {
+    FILE *suspectedFile;
     suspectedFile = fopen(fileName, "r");
     char fileBuffer[FILE_MAX_SIZE];
     fread(fileBuffer, 1, FILE_MAX_SIZE, suspectedFile);
@@ -195,6 +195,7 @@ void neutralize_virus(char *fileName, int signatureOffset)
 
 void quit(link *viruslist) {
     list_free(viruslist);
+    free(fileName);
     exit(EXIT_SUCCESS);
 }
 
@@ -251,7 +252,7 @@ void menu(void){
             {
                 namebuff[strcspn(namebuff, "\n")] = '\0';
                 FILE *output = fopen(namebuff, "w");
-                menu[userChoise].fun(virus_list, suspectedFile);
+                menu[userChoise].fun(virus_list, output);
                 if (output != stdout)
                 {
                     fclose(output);
@@ -275,16 +276,8 @@ void menu(void){
 
 int main(int argc, char **argv)
 {
-    // while (1)
-    // {
-    //     virus *virus = readVirus(suspectedFile);
-    //     if(virus == NULL)
-    //         break;
-    //     printVirus(virus);
-        
-    // }
-    menu();
-    
+    fileName = strdup("signatures-L");
+    menu();   
 
     return (0);
 }
