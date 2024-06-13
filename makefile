@@ -1,12 +1,4 @@
-all: BubbleSort AntiVirus
-
-BubbleSort: BubbleSort.o
-
-	gcc -g -m32 -Wall -o BubbleSort BubbleSort.o
-
-BubbleSort.o: BubbleSort.c
-
-	gcc -m32 -g -Wall -c -o BubbleSort.o BubbleSort.c
+all: AntiVirus
 
 AntiVirus: AntiVirus.o
 

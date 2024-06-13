@@ -72,27 +72,20 @@ link* list_append(link* virus_list, virus* data)
 
 /* Free the memory allocated by the list. */
 void list_free(link *virus_list) {
-    while (virus_list != NULL) {
-        link *tmp = virus_list;
-        virus_list = virus_list->nextVirus;
-        if (tmp->vir != NULL) {
-            if (tmp->vir->sig != NULL) {
-                free(tmp->vir->sig);
-                tmp->vir->sig = NULL;
-            }
-            free(tmp->vir);
-            tmp->vir = NULL;
-        }
-        free(tmp);
-        tmp = NULL;
+    if (virus_list != NULL)
+    {
+        list_free(virus_list->nextVirus);
+        free(virus_list->vir->sig);
+        free(virus_list->vir);
+        free(virus_list);
     }
-    virus_list = NULL;
 }
 
 /*================================================================================================================================*/
 
-void quit(link *viruslist) {
-    list_free(viruslist);
+void quit(link *virus_list) {
+    list_free(virus_list);
+    virus_list = NULL;
     free(SigFileName);
     if (userInputFile != NULL)
     {
@@ -178,10 +171,9 @@ void load_sig()
         exit(EXIT_FAILURE);
     }
 
-    if (virus_list != NULL)
-    {
-        list_free(virus_list);
-    }
+    list_free(virus_list);
+    virus_list = NULL;
+    
     virus* virus;
     while ((virus = readVirus(virusSignatures)) != NULL)
     {
@@ -223,8 +215,6 @@ void detect_virus(char *buffer, unsigned int size, link *virus_list)
             {
                 break;
             }
-            
-            
         }
         curr_virus = curr_virus->nextVirus;
     }
