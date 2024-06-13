@@ -34,18 +34,29 @@ void list_print(link *virus_list, FILE* file)
     link *curr = virus_list;
     while (curr != NULL && file != NULL)
     {
-        fprintf(file, "\nVirus name: %s\n",curr->vir->virusName);
-        fprintf(file, "Virus size: %d\n",curr->vir->SigSize);
-        fprintf(file, "Signature:\n");
-        for (int i = 0; i < curr->vir->SigSize; i++)
+        if (curr->vir != NULL)
         {
-            fprintf(file, "%02X ", curr->vir->sig[i]);
-            if ((i + 1)% 20 == 0)
+            fprintf(file, "\nVirus name: %s\n",curr->vir->virusName);
+            fprintf(file, "Virus size: %d\n",curr->vir->SigSize);
+            if (curr->vir->sig != NULL)
             {
-                fprintf(file, "\n");
-            }
+                fprintf(file, "Signature:\n");
+                for (int i = 0; i < curr->vir->SigSize; i++)
+                {
+                    fprintf(file, "%02X ", curr->vir->sig[i]);
+                    if ((i + 1)% 20 == 0)
+                    {
+                        fprintf(file, "\n");
+                    }
+                }
+            } 
         }
         fprintf(file, "\n");
+        if (curr->nextVirus == NULL)
+        {
+            break;
+        }
+        
         curr = curr->nextVirus;
     }
 }
@@ -73,6 +84,7 @@ void list_free(link *virus_list) {
             tmp->vir = NULL;
         }
         free(tmp);
+        tmp = NULL;
     }
     virus_list = NULL;
 }
@@ -170,7 +182,6 @@ void load_sig()
     {
         list_free(virus_list);
     }
-    
     virus* virus;
     while ((virus = readVirus(virusSignatures)) != NULL)
     {
@@ -301,7 +312,7 @@ int main(int argc, char **argv)
     }
     
 
-    char s[5];
+    char menuBuffer[5];
 
     struct fun_desc menu[] = {
         { "Set signatures file name", SetSigFileName }, { "Load signatures", load_sig }, { "Print signatures", list_print},
@@ -317,19 +328,19 @@ int main(int argc, char **argv)
         }
         printf("Option: ");
 
-        if (fgets(s, sizeof(s), stdin) == NULL){
+        if (fgets(menuBuffer, sizeof(menuBuffer), stdin) == NULL){
             if (!feof(stdin)){
                 perror("Error reading");
             }
             printf("\n");
             break;
         }
-        if (s[0] < '0' || s[0] > '9')
+        if (menuBuffer[0] < '0' || menuBuffer[0] > '9')
         {
             printf("Input not legal\n");
             break;
         }
-        int userChoise = atoi(s);
+        int userChoise = atoi(menuBuffer);
         if (userChoise < 0 || userChoise >= size){
             printf("\nNot within bounds\n");
             break;
@@ -349,6 +360,7 @@ int main(int argc, char **argv)
                 menu[userChoise].fun(virus_list, output);
                 fclose(output);
             }
+
         } else if (userChoise == 3 || userChoise == 5) //detect viruses or quit
         {
             menu[userChoise].fun(virus_list);
