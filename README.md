@@ -1,37 +1,42 @@
-# Anti Virus
+# Anti-Virus
 
-This program simulates an anti-virus that detects and neutralizes viruses within binary files. Based on the given known list of virus signatures, the program can automatically neutralize any viruses that infect your file!
+This program simulates an anti-virus system designed to detect and neutralize viruses in binary files. By using a known list of virus signatures, the program can automatically identify and neutralize any viruses within your files.
+
+## Features
+
+- **Virus Detection**: Scans binary files for known virus signatures.
+- **Virus Neutralization**: Automatically removes or neutralizes detected viruses by modifying infected code within the file.
+- **Signature Management**: Handles virus signatures using a linked list structure for efficient storage and lookup.
 
 ## How to Use
 
-1. **Memory Management and Debugging**:
-   - Fix segmentation faults and memory leaks in a provided buggy program using `gdb` and `valgrind`.
-   - Write `hexaPrint`, a program that receives a binary file and prints each byte in hexadecimal format.
+1. **Upload a Signatures File and an Infected File**:
+   - The virus signatures are stored in the background using a linked list structure.
+   - The infected file will be checked against these stored virus signatures.
 
-2. **Virus Detector**:
-   - Create a virus detection program that uses linked lists to store virus signatures.
-   - Detect viruses by comparing bytes in a file to the virus signatures stored in the linked list.
+2. **Virus Detection**:
+   - Detects viruses by comparing the bytes in the file to the signatures loaded into the linked list.
 
 3. **Virus Neutralization**:
-   - Automatically neutralize viruses by modifying their code in the binary file.
+   - Neutralizes viruses by modifying the infected portions of the binary file based on the detected signatures.
 
 ## How to Run
 
 1. **Compile the Program**:
-   - Run the following in the shell to compile:
+   - Run the following command in the terminal to compile the program:
      ```bash
      make
      ```
 
-2. **Run the Program**:
+2. **Execute the Program**:
    - Use the following syntax to run the anti-virus program:
      ```bash
-     ./AntiVirus FILE
+     ./AntiVirus <FILE>
      ```
-   - `FILE`: The file to check for viruses.
+   - `FILE`: The name of the binary file to scan for viruses.
 
-3. **Program Menu**:
-   - When the program runs, the following menu will appear:
+3. **Interactive Program Menu**:
+   - After starting the program, the following menu options will appear:
      ```
      0) Set signatures file name
      1) Load signatures
@@ -40,15 +45,32 @@ This program simulates an anti-virus that detects and neutralizes viruses within
      4) Fix file
      5) Quit
      ```
-     - **0) Set signatures file name**: Set the file containing virus signatures.
-     - **1) Load signatures**: Load virus signatures from the current file.
-     - **2) Print signatures**: Display all loaded virus signatures.
-     - **3) Detect viruses**: Check the specified file for virus signatures.
-     - **4) Fix file**: Neutralize detected viruses.
+     - **0) Set signatures file name**: Set the file that contains virus signatures.
+     - **1) Load signatures**: Load virus signatures from the specified file into memory.
+     - **2) Print signatures**: Display all currently loaded virus signatures.
+     - **3) Detect viruses**: Scan the specified binary file for viruses.
+     - **4) Fix file**: Neutralize detected viruses in the file.
      - **5) Quit**: Exit the program.
 
-### Example
+
+
+ ## Example Usage
 
 ```bash
+# Compile the program
 make
-./AntiVirus suspectedFile
+
+# Run the anti-virus on an infected file
+./AntiVirus infected
+
+# set signatures file name
+0
+signatures-B
+
+# Load signatures from a file
+1
+
+# Detect and neutralize viruses
+3
+4
+quit
